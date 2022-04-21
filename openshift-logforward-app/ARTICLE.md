@@ -29,7 +29,7 @@ Let's validate and ensure that our elasticsearch is accessible and functional:
 
 * Validating cluster health output command
  
-```json
+```shell
 [root@elastic-server ~]# curl elastic-server:9200/_cluster/health?pretty
 {
   "cluster_name" : "ES-CLUSTER",
@@ -336,7 +336,7 @@ httpd-example-1-s5fj6    1/1     Running     0          21m
 ```
 &nbsp;
 
-```json
+```shell
 [root@bastion ~]# oc patch dc httpd-example --type merge --patch '{"spec":{"template":{"metadata":{"labels":{"applogforward": "enable"}}}}}'
 deploymentconfig.apps.openshift.io/httpd-example patched
 ```
@@ -453,3 +453,4 @@ httpd-example-6-gg8sg   1/1     Running   0          22s
 [Forwarding logs to an external Elasticsearch instance](https://docs.openshift.com/container-platform/4.9/logging/cluster-logging-external.html#cluster-logging-collector-log-forward-es_cluster-logging-external)
 
 [Install Elasticsearch with RPM](https://www.elastic.co/guide/en/elasticsearch/reference/current/rpm.html)
+
