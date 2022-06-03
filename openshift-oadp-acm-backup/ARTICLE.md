@@ -311,8 +311,8 @@ secret/cloud-credentials created
 [root@bastion OADP]# oc -n openshift-adp extract secret/cloud-credentials --to=-
 # cloud
 [default]
-aws_access_key_id=`miniouseradmin`
-aws_secret_access_key=`miniouserpass`
+aws_access_key_id=miniouseradmin
+aws_secret_access_key=miniouserpass
 ```
 
 &nbsp;
@@ -378,4 +378,136 @@ oadp-minio   12s
 ## **Configuring Openshift Advanced Cluster Management**
 
 &nbsp;
+
+
+Now that we have our OADP installed and configured, let's configure our ACM.
+
+- In the `multiclusterhub` we need to enable the backup, for that, let's run the command below, to add the line `enableClusterBackup: true`
+
+```shell
+[root@bastion OADP]# oc -n open-cluster-management patch MultiClusterHub multiclusterhub --type merge --patch '{"spec":{"enableClusterBackup": true}}'
+multiclusterhub.operator.open-cluster-management.io/multiclusterhub patched
+
+[root@bastion OADP]# oc get MultiClusterHub multiclusterhub -o yaml | grep -i spec -A2
+spec:
+  availabilityConfig: High
+  enableClusterBackup: true
+```
+
+- Now let's create our `BackupSchedule`
+
+```yaml
+cat <<EOF > backup-schedule-acm.yaml
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: BackupSchedule
+metadata:
+  name: schedule-acm
+spec:
+  maxBackups: 3                 # Maximum number of backups after which old backups should be removed
+  veleroSchedule: 0 */6 * * *   # Create a backup every 6 hours
+  veleroTtl: 72h                # Deletes scheduled backups after 72h
+EOF
+```
+
+```shell
+[root@bastion OADP]# oc -n openshift-adp create -f backup-schedule-acm.yaml
+backupschedule.cluster.open-cluster-management.io/schedule-acm created
+
+[root@bastion OADP]# oc get BackupSchedule -n openshift-adp
+NAME           PHASE     MESSAGE
+schedule-acm   Enabled   Velero schedules are enabled
+```
+
+
+- Once we create our `BackupSchedule`, the following Schedules will automatically be created: `acm-credentials`, `acm-managed-clusters` and `acm-resources`
+
+```shell
+[root@bastion OADP]# oc get Schedule -n openshift-adp
+NAME                            AGE
+acm-credentials-schedule        85s
+acm-managed-clusters-schedule   85s
+acm-resources-schedule          85s
+```
+
+### Description of each schedule:
+
+- **acm-credentials-schedule**
+    - This resource is used to schedule backups for the user created credentials and any copy of those credentials
+- **acm-managed-clusters-schedule**
+    - This resource is used to schedule backups for the managed cluster resources, including managed clusters, cluster pools, and cluster sets.                        
+- **acm-resources-schedule**
+    - This resource is used to schedule backups for the Applications and Policyresources, including any required resources, such as: 
+        - **Applications**: Channels, Subscriptions, Deployables and PlacementRules, Policy: PlacementBindings, Placement, and PlacementDecisions
+
+&nbsp;
+
+- After a few minutes, we already have our first Backup successfully performed.
+
+```shell
+[root@bastion OADP]# oc get Backup -n openshift-adp
+NAME                                           AGE
+acm-credentials-schedule-20220523034240        11m
+acm-managed-clusters-schedule-20220523034240   11m
+acm-resources-schedule-20220523034240          11m
+```
+
+- We can also view our backup data directly from the MinIO console
+
+![](images/minio-first-data.png)
+
+- By clicking on the Browse button, we can browse the created directories and files.
+
+![](images/minio-backup-files.png)
+
+
+&nbsp;
+
+## **Data loss simulation**
+
+&nbsp;
+
+- Now let's simulate the removal of some objects: Credentials, ClusterSet and Application, after deleting these objects, let's restore using our most recent backup.
+Let's delete the following objects:
+
+    - **Credentials**: *rhocmcreds*
+    - **Applications**: *teste-acm-deploy*
+    - **ClusterSet:** *clusters-rhocm*
+
+&nbsp;
+
+- **Before:**
+
+![](images/acm-credentials.png)
+![](images/acm-applications.png)
+![](images/acm-cluster-set.png)
+
+&nbsp;
+
+- **After:**
+
+![](images/acm-credentials-del.png)
+![](images/acm-applications-del.png)
+![](images/acm-cluster-set-del.png)
+
+&nbsp;
+
+## **Restore Objects**
+
+First, let's understand the possible options for filling in the fields below
+
+- **veleroManagedClustersBackupName**
+    - latest &emsp;&emsp;&emsp;&emsp;&emsp; *<----- Restore the most recent Backup*
+    - skip &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;*<----- Ignore the job, taking no action*
+    - backup_name&emsp;&emsp;*<----- Restore the specific backup name*
+ 
+- **veleroCredentialsBackupName**
+    - latest
+    - skip
+    - specific backup name
+
+- **veleroResourcesBackupName**
+    - latest
+    - skip
+    - specific backup name
+
 
