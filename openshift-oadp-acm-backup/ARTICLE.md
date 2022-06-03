@@ -510,4 +510,71 @@ First, let's understand the possible options for filling in the fields below
     - skip
     - specific backup name
 
+&nbsp;
 
+- Let's now recover the deleted objects, for that we will perform the steps below
+
+```yaml
+cat <<EOF > acm-cluster-restore.yaml
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Restore
+metadata:
+  name: restore-acm
+spec:
+  cleanupBeforeRestore: CleanupRestored       <---- Clean up only resources created by a previous acm restore
+  veleroManagedClustersBackupName: latest     <---- Restore our latest acm-managed-clusters-schedule
+  veleroCredentialsBackupName: latest         <---- Restore our latest acm-credentials-schedule 
+  veleroResourcesBackupName: latest           <---- Restore our latest acm-resources-schedule 
+EOF
+```
+
+```shell
+[root@bastion OADP]# oc create -f acm-cluster-restore.yaml
+```
+
+- After creating and applying the restore yaml, let's run the commands below to view our restore job:
+
+```shell
+[root@bastion OADP]# oc get restores -n openshift-adp
+NAME          PHASE     MESSAGE
+restore-acm   Running   Velero restore restore-acm-acm-resources-schedule-20220524000045 is currently executing
+
+[root@bastion OADP]# oc get restores.velero.io -n openshift-adp
+NAME                                                       AGE
+restore-acm-acm-credentials-schedule-20220524000045        43s
+restore-acm-acm-managed-clusters-schedule-20220524000045   43s
+restore-acm-acm-resources-schedule-20220524000045          43s
+```
+
+- Follow through the command below, until the message is like the example below
+
+```shell
+[root@bastion OADP]# oc get restores -n openshift-adp
+NAME          PHASE      MESSAGE
+restore-acm   Finished   All Velero restores have run successfully
+```
+
+Now we can go back to ACM and see if our settings were successfully restored
+
+- We can check that the restore worked correctly by viewing the creation time in Credentials and Applications
+
+![](images/acm-credentials-restored.png)
+![](images/acm-applications-restored.png)
+![](images/acm-cluster-set-restored.png)
+
+&nbsp;
+
+- After performing the restore successfully, we can see in MinIO that a new directory has been created and inside we have the backups that were used in the restore.
+
+![](images/minio-restore-folder.png)
+![](images/minio-restore-files.png)
+
+
+
+## **References**
+
+- [Cluster backup and restore operator (Technology Preview)](https://access.redhat.com/documentation/en-us/red_hat_advanced_cluster_management_for_kubernetes/2.4/html/clusters/managing-your-clusters#hub-backup-and-restore)
+- [Cluster Back up and Restore Operator](https://github.com/stolostron/cluster-backup-operator)
+- [Installing the OADP Operator ](https://docs.openshift.com/container-platform/4.10/backup_and_restore/application_backup_and_restore/installing/installing-oadp-aws.html#oadp-installing-operator_installing-oadp-aws)
+- [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide.html)
+- [Technology Preview Features Support Scope](https://access.redhat.com/support/offerings/techpreview)
