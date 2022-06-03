@@ -53,6 +53,8 @@ First of all, let's understand what are the tools that we will use in this artic
 [root@minio-server ~]# dnf install @container-tools -y
 ```
 
+&nbsp;
+
 - Let's configure our mount point with an LVM volume, we will use the sdb disk as listed below
 
 ```shell
@@ -68,6 +70,8 @@ sdb                      8:16   0   50G  0 disk
 sr0                     11:0    1 1024M  0 rom  
 ```
 
+&nbsp;
+
 - Let's configure our pv, vg and lv as per the commands listed below
 
 ```shell
@@ -80,6 +84,8 @@ sr0                     11:0    1 1024M  0 rom
 [root@minio-server ~]# lvcreate -n lv_minio-data -l 100%FREE vg_minio-data
   Logical volume "lv_minio-data" created.
 ```
+
+&nbsp;
 
 - Now let's format our lvm as xfs using the mkfs.xfs command
 
@@ -97,6 +103,8 @@ log      =internal log           bsize=4096   blocks=6399, version=2
 realtime =none                   extsz=4096   blocks=0, rtextents=0
 ```
 
+&nbsp;
+
 - Now let's create the directory that we will use to make our mount point
 
 ```shell
@@ -104,6 +112,8 @@ realtime =none                   extsz=4096   blocks=0, rtextents=0
 mkdir: created directory '/minio'
 mkdir: created directory '/minio/data'
 ```
+
+&nbsp;
 
 - Before performing the mount, let's adjust the contexts of this directory, using the restorecon command, run the command below
 
@@ -113,11 +123,15 @@ Relabeled /minio from unconfined_u:object_r:default_t:s0 to system_u:object_r:de
 Relabeled /minio/data from system_u:object_r:unlabeled_t:s0 to system_u:object_r:default_t:s0
 ```
 
+&nbsp;
+
 - Let's also install tuned and apply a configuration profile to improve our performance.
 
 ```shell
 [root@minio-server ~]# dnf install tuned.noarch tuned-utils.noarch tuned-utils-systemtap.noarch -y
 ```
+
+&nbsp;
 
 - To list available profiles, run this command
 
@@ -140,6 +154,8 @@ Available profiles:
 Current active profile: balanced
 ```
 
+&nbsp;
+
 - Let's define the throughput-performance profile, with the command below
 
 ```shell
@@ -149,6 +165,8 @@ Current active profile: balanced
 Current active profile: throughput-performance
 ```
 
+&nbsp;
+
 - Now let's mount our /minio/data directory, for that, add the line below in your /etc/fstab
 
 ```shell
@@ -157,6 +175,8 @@ Current active profile: throughput-performance
 /dev/mapper/vg_minio--data-lv_minio--data /minio/data xfs defaults,noatime,nodiratime 1 2
 ```
 
+&nbsp;
+
 - Now to mount, run the command below
 
 ```shell
@@ -164,12 +184,16 @@ Current active profile: throughput-performance
 mount: /dev/mapper/vg_minio--data-lv_minio--data mounted on /minio/data.
 ```
 
+&nbsp;
+
 - Now let's create the mini user and define its home
 
 ```shell
 [root@minio-server ~]# useradd -s /sbin/nologin -d /minio minio
 [root@minio-server ~]# chown -R minio:minio /minio
 ```
+
+&nbsp;
 
 - Now, let's run our MinIO Container
 
@@ -200,6 +224,8 @@ CONTAINER ID  IMAGE                       COMMAND               CREATED         
 d69929bc4701  quay.io/minio/minio:latest  server /data --co...  11 seconds ago  Up 11 seconds ago  0.0.0.0:9000-9001->9000-9001/tcp  minio-server
 ```
 
+&nbsp;
+
 - Now, to configure our container as a service managed by systemd, let's do the following, create the following directory structure:
 
 ```shell
@@ -211,6 +237,8 @@ mkdir: created directory '.config/systemd/user'
 [root@minio-server ~]# cd ~/.config/systemd/user/
 ```
 
+&nbsp;
+
 - With the command below, our file service will be generated, to control the start, stop, restart and status of our container
 
 ```shell
@@ -219,6 +247,8 @@ mkdir: created directory '.config/systemd/user'
 
 [root@minio-server user]# systemctl --user daemon-reload
 ```
+
+&nbsp;
 
 - Now let's enable our service so that it can start along with the OS and validate the status of our service
 
@@ -246,6 +276,8 @@ May 05 17:23:20 minio-server systemd[4546]: Started Podman container-minio-serve
 May 05 17:23:20 minio-server podman[31409]: b9e648d667dd599898f70e4eb6ad280e7a81c9bd06885841a88c9c890ca08491
 ```
 
+&nbsp;
+
 - Now let's adjust the firewalld and authorize access through our ports `9000` and `9001`, for that follow the commands below
 
 ```shell
@@ -259,13 +291,19 @@ success
 success
 ```
 
+&nbsp;
+
 - Access the server ip on port 9001 (console), to authenticate, use the user and pass defined in the execution of the container
 
 ![](images/minio-console.png)
 
+&nbsp;
+
 - After accessing the console, on the left side menu, click on Buckets and then on the `Create Bucket` button, set the name and click on `Create Bucket` again.
 
 ![](images/minio-create-bucket.png)
+
+&nbsp;
 
 - After creating our bucket, we go to Openshift to install the OADP.
 
@@ -281,11 +319,13 @@ success
 
 ![](images/oadp-operator-install.png)
 
+&nbsp;
 
 - On this screen, keep the default options already defined and select **Enable Operator recommended cluster monitoring on this Namespace**, then click Install
 
 ![](images/oadp-install.png)
 
+&nbsp;
 
 - Now let's create our credential secret, informing our MinIO username and password
 
@@ -301,6 +341,8 @@ EOF
 aws_access_key_id=miniouseradmin
 aws_secret_access_key=miniouserpass
 ```
+
+&nbsp;
 
 - To create the secret, run the command below, remembering that the name of the secret must be cloud-credentials
 
@@ -394,6 +436,8 @@ spec:
   enableClusterBackup: true
 ```
 
+&nbsp;
+
 - Now let's create our `BackupSchedule`
 
 ```yaml
@@ -418,6 +462,7 @@ NAME           PHASE     MESSAGE
 schedule-acm   Enabled   Velero schedules are enabled
 ```
 
+&nbsp;
 
 - Once we create our `BackupSchedule`, the following Schedules will automatically be created: `acm-credentials`, `acm-managed-clusters` and `acm-resources`
 
@@ -428,6 +473,8 @@ acm-credentials-schedule        85s
 acm-managed-clusters-schedule   85s
 acm-resources-schedule          85s
 ```
+
+&nbsp;
 
 ### Description of each schedule:
 
@@ -451,9 +498,13 @@ acm-managed-clusters-schedule-20220523034240   11m
 acm-resources-schedule-20220523034240          11m
 ```
 
+&nbsp;
+
 - We can also view our backup data directly from the MinIO console
 
 ![](images/minio-first-data.png)
+
+&nbsp;
 
 - By clicking on the Browse button, we can browse the created directories and files.
 
@@ -532,6 +583,8 @@ EOF
 [root@bastion OADP]# oc create -f acm-cluster-restore.yaml
 ```
 
+&nbsp;
+
 - After creating and applying the restore yaml, let's run the commands below to view our restore job:
 
 ```shell
@@ -546,6 +599,8 @@ restore-acm-acm-managed-clusters-schedule-20220524000045   43s
 restore-acm-acm-resources-schedule-20220524000045          43s
 ```
 
+&nbsp;
+
 - Follow through the command below, until the message is like the example below
 
 ```shell
@@ -553,6 +608,8 @@ restore-acm-acm-resources-schedule-20220524000045          43s
 NAME          PHASE      MESSAGE
 restore-acm   Finished   All Velero restores have run successfully
 ```
+
+&nbsp;
 
 Now we can go back to ACM and see if our settings were successfully restored
 
@@ -569,7 +626,8 @@ Now we can go back to ACM and see if our settings were successfully restored
 ![](images/minio-restore-folder.png)
 ![](images/minio-restore-files.png)
 
-
+&nbsp;
+&nbsp;
 
 ## **References**
 
