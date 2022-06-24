@@ -713,8 +713,8 @@ This way we can troubleshoot our restore job
 
 ## **References**
 
-- [Cluster backup and restore operator (Technology Preview)](https://access.redhat.com/documentation/en-us/red_hat_advanced_cluster_management_for_kubernetes/2.4/html/clusters/managing-your-clusters#hub-backup-and-restore)
+- [Cluster backup and restore operator](https://access.redhat.com/documentation/en-us/red_hat_advanced_cluster_management_for_kubernetes/2.5/html/clusters/managing-your-clusters#hub-backup-and-restore)
 - [Cluster Back up and Restore Operator](https://github.com/stolostron/cluster-backup-operator)
-- [Installing the OADP Operator ](https://docs.openshift.com/container-platform/4.10/backup_and_restore/application_backup_and_restore/installing/installing-oadp-aws.html#oadp-installing-operator_installing-oadp-aws)
+- [Installing the OADP Operator](https://docs.openshift.com/container-platform/4.10/backup_and_restore/application_backup_and_restore/installing/installing-oadp-aws.html#oadp-installing-operator_installing-oadp-aws)
 - [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide.html)
 - [Technology Preview Features Support Scope](https://access.redhat.com/support/offerings/techpreview)
