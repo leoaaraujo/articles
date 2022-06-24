@@ -2,15 +2,12 @@
 
 &nbsp;
 
-> ### This article will demonstrate how to backup and restore Red Hat ACM using the OADP solution and the MinIO from the object store..
+> ### This article will demonstrate how to backup and restore Red Hat ACM 2.5 using the OADP solution and the MinIO from the object store..
 
 &nbsp;
 
 First of all, let's understand what are the tools that we will use in this article:
 
-
-| :warning:  Remembering that this feature is still in Technology Preview, so I don't recommend using it in a production environment.   |
-|-----------------------------------------|
 
 &nbsp;
 
@@ -311,21 +308,45 @@ success
 
 &nbsp;
 
-## **Install OpenShift API for Data Protection**
+## **Configuring Openshift Advanced Cluster Management**
 
 &nbsp;
 
-- In the Openshift console click `OperatorHub` > in the search field type  `oadp` > select `OADP Operator (provided by Red Hat)` and click Install
 
-![](images/oadp-operator-install.png)
+Now that we have our OADP installed and configured, let's configure our ACM.
 
-&nbsp;
+- In the `multiclusterhub` we need to enable the backup, for that, let's run the command below, to modify the component `cluster-backup` to `enabled: true`
 
-- On this screen, keep the default options already defined and select **Enable Operator recommended cluster monitoring on this Namespace**, then click Install
+```shell
+[root@bastion OADP]# oc get multiclusterhub multiclusterhub -o yaml | grep "cluster-backup" -B1
+    - enabled: false
+      name: cluster-backup
 
-![](images/oadp-install.png)
+[root@bastion OADP]# oc patch MultiClusterHub multiclusterhub \
+> -n open-cluster-management --type=json \
+> -p='[{"op": "add", "path": "/spec/overrides/components/-","value":{"name":"cluster-backup","enabled":true}}]'
+multiclusterhub.operator.open-cluster-management.io/multiclusterhub patched
 
-&nbsp;
+[root@bastion OADP]# oc get multiclusterhub multiclusterhub -o yaml | grep "cluster-backup" -B1
+    - enabled: true
+      name: cluster-backup
+```
+
+- After we enable the cluster-backup parameter, we can see that a component called `cluster-backup-chart-sub` appears as Installed successfully.
+
+  - This component has just installed the operator `OADP` in the `open-cluster-management-backup namespace`, maximizing configuration steps.
+
+```shell
+[root@bastion OADP]# oc get multiclusterhub multiclusterhub -o yaml | grep "cluster-backup-chart-sub" -A4 -B2
+status:
+  components:
+    cluster-backup-chart-sub:
+      lastTransitionTime: "2022-06-23T19:10:23Z"
+      reason: InstallSuccessful
+      status: "True"
+      type: Deployed
+```
+
 
 - Now let's create our credential secret, informing our MinIO username and password
 
@@ -347,10 +368,10 @@ aws_secret_access_key=miniouserpass
 - To create the secret, run the command below, remembering that the name of the secret must be cloud-credentials
 
 ```shell
-[root@bastion OADP]# oc create secret generic cloud-credentials -n openshift-adp --from-file cloud=credentials
+[root@bastion OADP]# oc create secret generic cloud-credentials -n open-cluster-management --from-file cloud=credentials
 secret/cloud-credentials created
 
-[root@bastion OADP]# oc -n openshift-adp extract secret/cloud-credentials --to=-
+[root@bastion OADP]# oc -n open-cluster-management-backup extract secret/cloud-credentials --to=-
 # cloud
 [default]
 aws_access_key_id=miniouseradmin
@@ -372,7 +393,7 @@ apiVersion: oadp.openshift.io/v1alpha1
 kind: DataProtectionApplication
 metadata:
   name: oadp-minio
-  namespace: openshift-adp
+  namespace: open-cluster-management-backup
 spec:
   backupLocations:
     - velero:
@@ -407,34 +428,14 @@ EOF
 ```
 
 ```shell
-[root@bastion OADP]# oc -n openshift-adp create -f oadp-instance.yaml 
+[root@bastion OADP]# oc -n open-cluster-management-backup create -f oadp-instance.yaml 
 dataprotectionapplication.oadp.openshift.io/oadp-minio created
 
-[root@bastion OADP]# oc -n openshift-adp get DataProtectionApplication oadp-minio
+[root@bastion OADP]# oc -n open-cluster-management-backup get DataProtectionApplication oadp-minio
 NAME         AGE
 oadp-minio   12s
 ```
 
-&nbsp;
-
-## **Configuring Openshift Advanced Cluster Management**
-
-&nbsp;
-
-
-Now that we have our OADP installed and configured, let's configure our ACM.
-
-- In the `multiclusterhub` we need to enable the backup, for that, let's run the command below, to add the line `enableClusterBackup: true`
-
-```shell
-[root@bastion OADP]# oc -n open-cluster-management patch MultiClusterHub multiclusterhub --type merge --patch '{"spec":{"enableClusterBackup": true}}'
-multiclusterhub.operator.open-cluster-management.io/multiclusterhub patched
-
-[root@bastion OADP]# oc get MultiClusterHub multiclusterhub -o yaml | grep -i spec -A2
-spec:
-  availabilityConfig: High
-  enableClusterBackup: true
-```
 
 &nbsp;
 
@@ -454,10 +455,10 @@ EOF
 ```
 
 ```shell
-[root@bastion OADP]# oc -n openshift-adp create -f backup-schedule-acm.yaml
+[root@bastion OADP]# oc -n open-cluster-management-backup create -f backup-schedule-acm.yaml
 backupschedule.cluster.open-cluster-management.io/schedule-acm created
 
-[root@bastion OADP]# oc get BackupSchedule -n openshift-adp
+[root@bastion OADP]# oc get BackupSchedule -n open-cluster-management-backup
 NAME           PHASE     MESSAGE
 schedule-acm   Enabled   Velero schedules are enabled
 ```
@@ -467,11 +468,16 @@ schedule-acm   Enabled   Velero schedules are enabled
 - Once we create our `BackupSchedule`, the following Schedules will automatically be created: `acm-credentials`, `acm-managed-clusters` and `acm-resources`
 
 ```shell
-[root@bastion OADP]# oc get Schedule -n openshift-adp
-NAME                            AGE
-acm-credentials-schedule        85s
-acm-managed-clusters-schedule   85s
-acm-resources-schedule          85s
+[root@bastion OADP]# oc get Schedule -n open-cluster-management-backup
+NAME                               AGE
+acm-credentials-cluster-schedule   113s
+acm-credentials-hive-schedule      113s
+acm-credentials-schedule           114s
+acm-managed-clusters-schedule      113s
+acm-resources-generic-schedule     113s
+acm-resources-schedule             113s
+acm-validation-policy-schedule     113s
+
 ```
 
 &nbsp;
@@ -491,11 +497,15 @@ acm-resources-schedule          85s
 - After a few minutes, we already have our first Backup successfully performed.
 
 ```shell
-[root@bastion OADP]# oc get Backup -n openshift-adp
-NAME                                           AGE
-acm-credentials-schedule-20220523034240        11m
-acm-managed-clusters-schedule-20220523034240   11m
-acm-resources-schedule-20220523034240          11m
+[root@bastion OADP]# oc get Backup -n open-cluster-management-backup
+NAME                                              AGE
+acm-credentials-cluster-schedule-20220624192134   12m
+acm-credentials-hive-schedule-20220624192134      12m
+acm-credentials-schedule-20220624192134           12m
+acm-managed-clusters-schedule-20220624192134      12m
+acm-resources-generic-schedule-20220624192134     12m
+acm-resources-schedule-20220624192134             12m
+acm-validation-policy-schedule-20220624192134     12m
 ```
 
 &nbsp;
@@ -588,15 +598,21 @@ EOF
 - After creating and applying the restore yaml, let's run the commands below to view our restore job:
 
 ```shell
-[root@bastion OADP]# oc get restores -n openshift-adp
+[root@bastion OADP]# oc get restores -n open-cluster-management-backup
 NAME          PHASE     MESSAGE
-restore-acm   Running   Velero restore restore-acm-acm-resources-schedule-20220524000045 is currently executing
+restore-acm   Started   Prepare to restore, cleaning up resources
 
-[root@bastion OADP]# oc get restores.velero.io -n openshift-adp
+
+[root@bastion OADP]# oc get restores.velero.io -n open-cluster-management-backup
 NAME                                                       AGE
-restore-acm-acm-credentials-schedule-20220524000045        43s
-restore-acm-acm-managed-clusters-schedule-20220524000045   43s
-restore-acm-acm-resources-schedule-20220524000045          43s
+restore-acm-acm-credentials-cluster-schedule-20220624192134   2m36s
+restore-acm-acm-credentials-hive-schedule-20220624192134      2m36s
+restore-acm-acm-credentials-schedule-20220624192134           2m36s
+restore-acm-acm-managed-clusters-schedule-20220624192134      2m36s
+restore-acm-acm-resources-generic-schedule-20220624192134     2m36s
+restore-acm-acm-resources-schedule-20220624192134             2m36s
+
+
 ```
 
 &nbsp;
@@ -604,14 +620,80 @@ restore-acm-acm-resources-schedule-20220524000045          43s
 - Follow through the command below, until the message is like the example below
 
 ```shell
-[root@bastion OADP]# oc get restores -n openshift-adp
-NAME          PHASE      MESSAGE
-restore-acm   Finished   All Velero restores have run successfully
+[root@bastion OADP]# oc get restores -n open-cluster-management-backup
+NAME          PHASE                MESSAGE
+restore-acm   FinishedWithErrors   Velero restores have run to completion but encountered 1+ errors
 ```
 
 &nbsp;
 
-Now we can go back to ACM and see if our settings were successfully restored
+In this example, or restore was executed with failure, because with all backup resources created, there is no cluster, such as acm-credentials-cluster-schedule
+
+&nbsp;
+
+- To view the restore jobs that have failed or partially failed status, we will execute the commands below
+```shell
+# To list all restore jobs
+
+[root@bastion OADP]# oc -n open-cluster-management-backup exec $(oc get pod -l app.kubernetes.io/instance=oadp-minio -o name) -c velero -- ./velero restore get
+NAME                                                          BACKUP                                            STATUS            STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
+restore-acm-acm-credentials-cluster-schedule-20220624192134   acm-credentials-cluster-schedule-20220624192134   PartiallyFailed   2022-06-24 20:16:48 +0000 UTC   2022-06-24 20:16:49 +0000 UTC   1        0          2022-06-24 20:16:44 +0000 UTC   <none>
+restore-acm-acm-credentials-hive-schedule-20220624192134      acm-credentials-hive-schedule-20220624192134      PartiallyFailed   2022-06-24 20:16:47 +0000 UTC   2022-06-24 20:16:48 +0000 UTC   1        0          2022-06-24 20:16:44 +0000 UTC   <none>
+restore-acm-acm-credentials-schedule-20220624192134           acm-credentials-schedule-20220624192134           Completed         2022-06-24 20:16:44 +0000 UTC   2022-06-24 20:16:45 +0000 UTC   0        0          2022-06-24 20:16:44 +0000 UTC   <none>
+restore-acm-acm-managed-clusters-schedule-20220624192134      acm-managed-clusters-schedule-20220624192134      PartiallyFailed   2022-06-24 20:16:47 +0000 UTC   2022-06-24 20:16:47 +0000 UTC   1        0          2022-06-24 20:16:44 +0000 UTC   <none>
+restore-acm-acm-resources-generic-schedule-20220624192134     acm-resources-generic-schedule-20220624192134     PartiallyFailed   2022-06-24 20:16:45 +0000 UTC   2022-06-24 20:16:45 +0000 UTC   1        0          2022-06-24 20:16:44 +0000 UTC   <none>
+restore-acm-acm-resources-schedule-20220624192134             acm-resources-schedule-20220624192134             Completed         2022-06-24 20:16:45 +0000 UTC   2022-06-24 20:16:47 +0000 UTC   0        0          2022-06-24 20:16:44 +0000 UTC   <none>
+
+
+# To see logs of restore job
+
+[root@bastion OADP]# oc -n open-cluster-management-backup exec $(oc get pod -l app.kubernetes.io/instance=oadp-minio -o name) -c velero -- ./velero restore logs restore-acm-acm-credentials-cluster-schedule-20220624192134
+time="2022-06-24T20:16:48Z" level=info msg="starting restore" logSource="pkg/controller/restore_controller.go:465" restore=open-cluster-management-backup/restore-acm-acm-credentials-cluster-schedule-20220624192134
+time="2022-06-24T20:16:48Z" level=info msg="Starting restore of backup open-cluster-management-backup/acm-credentials-cluster-schedule-20220624192134" logSource="pkg/restore/restore.go:387" restore=open-cluster-management-backup/restore-acm-acm-credentials-cluster-schedule-20220624192134
+time="2022-06-24T20:16:48Z" level=info msg="restore completed" logSource="pkg/controller/restore_controller.go:480" restore=open-cluster-management-backup/restore-acm-acm-credentials-cluster-schedule-20220624192134
+
+# To visualize description of restore job
+
+[root@bastion managedcluster]# oc -n open-cluster-management-backup exec $(oc get pod -l app.kubernetes.io/instance=oadp-minio -o name) -c velero -- ./velero restore describe restore-acm-acm-credentials-cluster-schedule-20220624192134
+Name:         restore-acm-acm-credentials-cluster-schedule-20220624192134
+Namespace:    open-cluster-management-backup
+Labels:       <none>
+Annotations:  <none>
+
+Phase:  PartiallyFailed (run 'velero restore logs restore-acm-acm-credentials-cluster-schedule-20220624192134' for more information)
+
+Started:    2022-06-24 20:16:48 +0000 UTC
+Completed:  2022-06-24 20:16:49 +0000 UTC
+
+Errors:
+  Velero:   error parsing backup contents: directory "resources" does not exist
+  Cluster:    <none>
+  Namespaces: <none>
+
+Backup:  acm-credentials-cluster-schedule-20220624192134
+
+Namespaces:
+  Included:  all namespaces found in the backup
+  Excluded:  <none>
+
+Resources:
+  Included:        *
+  Excluded:        nodes, events, events.events.k8s.io, backups.velero.io, restores.velero.io, resticrepositories.velero.io
+  Cluster-scoped:  auto
+
+Namespace mappings:  <none>
+
+Label selector:  <none>
+
+Restore PVs:  auto
+
+Preserve Service NodePorts:  auto
+```
+
+This way we can troubleshoot our restore job
+
+
+&nbsp;
 
 - We can check that the restore worked correctly by viewing the creation time in Credentials and Applications
 
