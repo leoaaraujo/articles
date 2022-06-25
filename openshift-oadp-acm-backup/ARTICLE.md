@@ -629,7 +629,7 @@ restore-acm   FinishedWithErrors   Velero restores have run to completion but en
 
 &nbsp;
 
-In this example, or restore was executed with failure, because with all backup resources created, there is no cluster, such as acm-credentials-cluster-schedule
+In this example, our restore was executed with failure, because with all backup resources created, there is no cluster, such as acm-credentials-cluster-schedule
 
 &nbsp;
 
