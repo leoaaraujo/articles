@@ -308,7 +308,7 @@ success
 
 &nbsp;
 
-## **Configuring Openshift Advanced Cluster Management**
+## **Configuring Openshift Advanced Cluster Management and OADP**
 
 &nbsp;
 
