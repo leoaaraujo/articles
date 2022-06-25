@@ -318,6 +318,8 @@ Now that we have our OADP installed and configured, let's configure our ACM.
 - In the `multiclusterhub` we need to enable the backup, for that, let's run the command below, to modify the component `cluster-backup` to `enabled: true`
 
 ```shell
+[root@bastion OADP]# oc project open-cluster-management
+
 [root@bastion OADP]# oc get multiclusterhub multiclusterhub -o yaml | grep "cluster-backup" -B1
     - enabled: false
       name: cluster-backup
@@ -368,7 +370,7 @@ aws_secret_access_key=miniouserpass
 - To create the secret, run the command below, remembering that the name of the secret must be cloud-credentials
 
 ```shell
-[root@bastion OADP]# oc create secret generic cloud-credentials -n open-cluster-management --from-file cloud=credentials
+[root@bastion OADP]# oc create secret generic cloud-credentials -n open-cluster-management-backup --from-file cloud=credentials
 secret/cloud-credentials created
 
 [root@bastion OADP]# oc -n open-cluster-management-backup extract secret/cloud-credentials --to=-
@@ -717,4 +719,3 @@ This way we can troubleshoot our restore job
 - [Cluster Back up and Restore Operator](https://github.com/stolostron/cluster-backup-operator)
 - [Installing the OADP Operator](https://docs.openshift.com/container-platform/4.10/backup_and_restore/application_backup_and_restore/installing/installing-oadp-aws.html#oadp-installing-operator_installing-oadp-aws)
 - [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide.html)
-- [Technology Preview Features Support Scope](https://access.redhat.com/support/offerings/techpreview)
