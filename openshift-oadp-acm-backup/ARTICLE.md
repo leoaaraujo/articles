@@ -17,7 +17,11 @@ First of all, let's understand what are the tools that we will use in this artic
 
 - OpenShift API for Data Protection (**OADP**) enables backup, restore, and disaster recovery of applications on an OpenShift cluster. Data that can be protected with OADP include Kubernetes resource objects, persistent volumes, and internal images.
 
+  - For more details about backup and other features, see this [link¹](#references)
+
 - **MinIO**, is an open source distributed object storage server written in Go, designed for Private Cloud infrastructure providing S3 storage functionality
+
+ 
 
 &nbsp;
 
@@ -486,13 +490,12 @@ acm-validation-policy-schedule     113s
 
 ### Description of each schedule:
 
-- **acm-credentials-schedule**
-    - This resource is used to schedule backups for the user created credentials and any copy of those credentials
-- **acm-managed-clusters-schedule**
-    - This resource is used to schedule backups for the managed cluster resources, including managed clusters, cluster pools, and cluster sets.                        
-- **acm-resources-schedule**
-    - This resource is used to schedule backups for the Applications and Policyresources, including any required resources, such as: 
-        - **Applications**: Channels, Subscriptions, Deployables and PlacementRules, Policy: PlacementBindings, Placement, and PlacementDecisions
+- **Credentials Backup**
+    - This backup schedule contains three backup files for Hive, Red Hat Advanced Cluster Management, and user-created credentials. 
+- **Managed Clusters Backup**
+    - This schedule contains only resources that activate the managed cluster connection to the hub cluster, where the backup is restored.                        
+- **Resources Backup**
+    - This backup schedule contains one backup for the Red Hat Advanced Cluster Management resources and one for generic resources. These resources use the following label, `cluster.open-cluster-management.io/backup`. 
 
 &nbsp;
 
@@ -713,9 +716,13 @@ This way we can troubleshoot our restore job
 &nbsp;
 &nbsp;
 
+
+
 ## **References**
+
 
 - [Cluster backup and restore operator](https://access.redhat.com/documentation/en-us/red_hat_advanced_cluster_management_for_kubernetes/2.5/html/clusters/managing-your-clusters#hub-backup-and-restore)
 - [Cluster Back up and Restore Operator](https://github.com/stolostron/cluster-backup-operator)
 - [Installing the OADP Operator](https://docs.openshift.com/container-platform/4.10/backup_and_restore/application_backup_and_restore/installing/installing-oadp-aws.html#oadp-installing-operator_installing-oadp-aws)
 - [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide.html)
+- [Backup and Restore Hub Clusters with Red Hat Advanced Cluster Management for Kubernetes](https://cloud.redhat.com/blog/backup-and-restore-hub-clusters-with-red-hat-advanced-cluster-management-for-kubernetes)¹
