@@ -211,7 +211,7 @@ spec:
     name: Prometheus
     type: prometheus
     access: proxy
-    url: https://prometheus-user-workload:9091
+    url: https://thanos-querier.openshift-monitoring.svc:9091
     isDefault: true
     jsonData:
       "tlsSkipVerify": true
