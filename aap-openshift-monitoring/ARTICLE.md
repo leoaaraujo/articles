@@ -151,13 +151,17 @@ spec:
       level: warn
       mode: console
 EOF
+```
 
+&nbsp;
+
+- Let's apply and validate our created Instance
+```shell
 $ oc -n openshift-user-workload-monitoring create -f grafana-instance.yaml
 
 $ oc -n openshift-user-workload-monitoring get pods -l app=grafana
 NAME                                 READY   STATUS    RESTARTS   AGE
 grafana-deployment-c4959687c-7vg9d   1/1     Running   0          6m24s
-
 ```
 
 &nbsp;
@@ -225,7 +229,19 @@ EOF
 
 &nbsp;
 
-- To validate our created datasource, use the edge route created previously and access via browser, authenticate using the username and password added in secret credentials. 
+- Let's apply and validate our created Datasource
+```shell
+$ oc -n openshift-user-workload-monitoring create -f grafana-datasource.yaml
+
+$ oc -n openshift-user-workload-monitoring get GrafanaDatasource  
+NAME         NO MATCHING INSTANCES   LAST RESYNC   AGE
+grafana-ds                           119s          3d23h
+```
+
+
+&nbsp;
+
+- To validate our created datasource using Grafana Console, use the edge route created previously and access via browser, authenticate using the username and password added in secret credentials. 
 - Once authenticated, click **Configuration** > **Data sources**
 
 ![](images/03.png)
@@ -255,7 +271,7 @@ EOF
 - First, let's create a secret to store our bearer token, previously collected in **AAP** with the user **aap-metrics**.
 
 ```shell
-# oc create secret generic aap-monitor-creds --from-literal=token={{ YOUR AAP BEARER TOKEN }} -n aap
+$ oc create secret generic aap-monitor-creds --from-literal=token={{ YOUR AAP BEARER TOKEN }} -n aap
 ```
 &nbsp;
 
@@ -286,7 +302,13 @@ spec:
     matchLabels:
       app.kubernetes.io/component: automationcontroller
 EOF
+```
 
+&nbsp;
+
+- Now let's apply and validate our created ServiceMonitor 
+
+```shell
 $ oc create -f svc-monitor-aap.yaml
 
 $ oc get servicemonitor -n aap                              
@@ -327,8 +349,12 @@ spec:
   folder: "AAP"      
 url: https://raw.githubusercontent.com/leoaaraujo/aap-dashboard/main/aap-dash.json
 EOF
+```
+&nbsp;
 
+- Let's apply and validate our created GrafanaDashboard
 
+```shell
 $ oc -n openshift-user-workload-monitoring create -f grafana-dashboard-aap.yaml
 
 
