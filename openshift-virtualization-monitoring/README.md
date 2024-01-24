@@ -14,7 +14,6 @@
 ## **Prerequisites**
 
 - User with the cluster-admin cluster role
-- Openshift 4.12 or +
 - Grafana Operator
 - User-Defined Projects enabled.
 
@@ -65,6 +64,8 @@ $ oc project openshift-user-workload-monitoring
 $ oc create sa grafana-sa
 $ oc adm policy add-cluster-role-to-user cluster-monitoring-view -z grafana-sa
 ```
+
+&nbsp;
 
 - Let's collect the grafana-sa serviceaccount token and create a secret for our Grafana instance.
 
@@ -228,7 +229,7 @@ spec:
     matchLabels:
       dashboards: grafana  
   folder: "Openshift Virtualization"      
-url: https://raw.githubusercontent.com/leoaaraujo/articles/openshift-virtualization-monitoring/files/ocp-v-dashboard.json
+url: https://raw.githubusercontent.com/leoaaraujo/articles/master/openshift-virtualization-monitoring/files/ocp-v-dashboard.json
 EOF
 ```
 &nbsp;
@@ -240,10 +241,9 @@ $ oc -n openshift-user-workload-monitoring create -f grafana-dashboard-ocp-v.yam
 
 
 $ oc -n openshift-user-workload-monitoring get grafanadashboard
-NAME                    NO MATCHING INSTANCES   LAST RESYNC   AGE
-grafana-dashboard-aap                           3s            145m
+NAME                      NO MATCHING INSTANCES   LAST RESYNC   AGE
+grafana-dashboard-ocp-v                                         3m54s
 ```
-
 
 &nbsp;
 
