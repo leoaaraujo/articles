@@ -1143,7 +1143,7 @@
           "refId": "A"
         }
       ],
-      "title": "KubeVirt - Api Read Request Duration",
+      "title": "KubeVirt - Api Server - Read Request Duration",
       "type": "timeseries"
     },
     {
@@ -1242,7 +1242,7 @@
           "refId": "A"
         }
       ],
-      "title": "KubeVirt - Api Read Request Duration",
+      "title": "KubeVirt - Api Server - Write Request Duration",
       "type": "timeseries"
     },
     {
