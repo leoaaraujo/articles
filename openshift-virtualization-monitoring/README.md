@@ -229,7 +229,7 @@ spec:
     matchLabels:
       dashboards: grafana  
   folder: "Openshift Virtualization"      
-url: https://raw.githubusercontent.com/leoaaraujo/articles/master/openshift-virtualization-monitoring/files/ocp-v-dashboard.json
+  url: https://raw.githubusercontent.com/leoaaraujo/articles/master/openshift-virtualization-monitoring/files/ocp-v-dashboard.json
 EOF
 ```
 &nbsp;
