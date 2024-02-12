@@ -58,9 +58,6 @@
 
 ![](images/03.png)
 
-| :warning: Whenever available, use a certified option. |
-|------------------------------------------|
-
 > [!TIP]
 > Whenever available, use a certified option.
 
@@ -276,8 +273,8 @@ $ oc logs -f -l app.kubernetes.io/managed-by=datadog-operator --max-log-requests
 
 ![](images/09.png)
 
-| :warning: Server data, such as status, cpu information, memory and other details, may take a few minutes to be displayed. |
-|------------------------------------------|
+> [!NOTE]  
+> Server data, such as status, cpu information, memory and other details, may take a few minutes to be displayed.
 
 
 &nbsp;
