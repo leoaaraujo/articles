@@ -61,6 +61,8 @@
 | :warning: Whenever available, use a certified option. |
 |------------------------------------------|
 
+> [!TIP]
+> Whenever available, use a certified option.
 
 &nbsp;
 
