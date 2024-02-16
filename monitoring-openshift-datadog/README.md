@@ -235,9 +235,70 @@ npm:
 
 &nbsp;
 
-`Global`, here we are defining our secret to authorize communication with Datadog servers, communication with our Kubelet without certificate validation, adjustments regarding the Security Context, enabling hostNetwork, our serviceaccount already with scc assigned by the operator and tolerations so that it can be executed on our masters nodes too.
+In the `credentials` block in **Global**, we have the definition of the secret previously created with the api and app key.
+
+```yaml
+credentials:
+  apiSecret:
+    keyName: api-key
+    secretName: datadog-secret
+  appSecret:
+    keyName: app-key
+    secretName: datadog-secret
+```
 
 &nbsp;
+
+In this block, we define the path to the crio service socket, we define the non-checking of tls for communication with the kubelet and in website, we define which datadog server will receive the data sent.
+
+```yaml
+criSocketPath: /var/run/crio/crio.sock
+kubelet:
+  tlsVerify: false
+site: datadoghq.eu
+```
+
+&nbsp;
+
+In the `clusterAgent` block in **override**, we add SecurityContext(scc) settings and which `serviceaccount` should be used in the `datadog-cluster-agent` pods.
+
+```yaml
+clusterAgent:
+  containers:
+    cluster-agent:
+      securityContext:
+        readOnlyRootFilesystem: false
+  replicas: 2
+  serviceAccountName: datadog-agent-scc
+```
+> [!NOTE]
+> The `datadog-agent-scc serviceaccount` is created automatically by the operator and already has all the necessary permissions for the agent to run correctly.
+
+&nbsp;
+
+In the `nodeAgent` block in **override**, we define settings for SecurityContext for the `datadog-agent` pods, we will use the same datadog-agent-scc serviceaccount and we also define the `tolerations` for the nodes that have taints created, in our case for the master nodes.
+
+```yaml
+nodeAgent:
+  hostNetwork: true
+  securityContext:
+    runAsUser: 0
+    seLinuxOptions:
+      level: s0
+      role: system_r
+      type: spc_t
+      user: system_u
+  serviceAccountName: datadog-agent-scc
+  tolerations:
+  - operator: Exists
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+
+```
+
+
+&nbsp;
+
 
 - After some explanations, let's create our datadog agent, execute this command to create this object:
 ```bash
@@ -254,6 +315,11 @@ $ oc -n openshift-operators get pods
 Obs.: Here we should have a datadog-agent running on each available openshift node.
 
 ![](images/07.png)
+
+> [!NOTE]
+> - `datadog-agent-xxxxx` pods, is responsible for collecting all metrics, events, traces and logs from each node in the cluster.
+> - `datadog-cluster-agent-xxxxx` pods, will act as a proxy between the API server and node-based agents, Cluster Agent helps to ease the server load.
+
 
 &nbsp;
 
@@ -304,7 +370,7 @@ $ oc logs -f -l app.kubernetes.io/managed-by=datadog-operator --max-log-requests
 
 - Datadog provides ready-made dashboards that can be used and customized. To use one available, in the left side menu, go to `Dashboards` > `Dashboard List` > choose the dashboard and click on the name.
 
-![](images/14.png)
+![](images/15.png)
 
 Obs.: To customize a dashboard provided by Datadog, use the Clone feature to make the desired changes and save.
 
@@ -315,6 +381,11 @@ Obs.: To customize a dashboard provided by Datadog, use the Clone feature to mak
 
 Using the Datadog Operator solution, we can have a complete monitoring solution for our Openshift cluster with main features such as APM, Network Analysis, Logs, Events and Metrics.
 
+
+To request an Openshift trial and learn more about our solution, [click here](https://www.redhat.com/en/technologies/cloud-computing/openshift/try-it).
+
+To request a Datadog trial and be able to replicate this knowledge, [click here](https://www.datadoghq.com/dg/monitor/free-trial).
+
 &nbsp;
 
 ## **References**
@@ -324,6 +395,5 @@ For more details and other configurations, start with the reference documents be
 - [Red Hat Catalog - Datadog Operator](hhttps://catalog.redhat.com/software/containers/datadog/operator/5e845a42ecb5246c09fe90b6)
 - [Datadog Documentation - Openshift](https://docs.datadoghq.com/integrations/openshift/?tab=operator)
 - [Datadog Documentation - Advanced setup for Datadog Operator](https://docs.datadoghq.com/containers/guide/operator-advanced/)
-
-
+- [Custom Datadog SCC for all features](https://docs.datadoghq.com/integrations/openshift/?tab=operator#custom-datadog-scc-for-all-features)
 
