@@ -1,4 +1,4 @@
-# **How to monitoring Openshift using Datadog Operator**
+# **How to monitor Openshift using Datadog Operator**
 
 
 &nbsp;
