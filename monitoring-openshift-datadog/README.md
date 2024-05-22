@@ -182,7 +182,7 @@ EOF
 
 - Some explanations about what we are enabling in this agent
 
-Enabling the `APM`` (_Application Performance Management_) feature
+Enabling the `APM` (_Application Performance Management_) feature
 ```yaml
 apm:
   enabled: true
@@ -392,7 +392,7 @@ To request a Datadog trial and be able to replicate this knowledge, [click here]
 
 For more details and other configurations, start with the reference documents below.
 
-- [Red Hat Catalog - Datadog Operator](hhttps://catalog.redhat.com/software/containers/datadog/operator/5e845a42ecb5246c09fe90b6)
+- [Red Hat Catalog - Datadog Operator](https://catalog.redhat.com/software/containers/datadog/operator/5e845a42ecb5246c09fe90b6)
 - [Datadog Documentation - Openshift](https://docs.datadoghq.com/integrations/openshift/?tab=operator)
 - [Datadog Documentation - Advanced setup for Datadog Operator](https://docs.datadoghq.com/containers/guide/operator-advanced/)
 - [Custom Datadog SCC for all features](https://docs.datadoghq.com/integrations/openshift/?tab=operator#custom-datadog-scc-for-all-features)
