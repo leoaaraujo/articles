@@ -271,9 +271,7 @@ firewall-cmd --reload
 
 <br>
 
-* For our first access, use the following format:
-
-http://\<IP Address or FQDN\>:3000
+* For our first access, use the following format: `http://<IP Address or FQDN>:3000`
 
 > [!IMPORTANT]
 > The login and password used for first access must be: <br>
