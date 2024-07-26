@@ -7,3 +7,4 @@
 - [ Monitoring Openshift using Zabbix and Prometheus API ](openshift-zabbix-api-prometheus/ARTICLE.md)
 - [ Monitoring Openshift Virtualization using User-Defined Projects and Grafana ](openshift-virtualization-monitoring/README.md)
 - [ How to monitor Openshift using Datadog Operator ](monitoring-openshift-datadog/README.md)
+- [ Monitoring Ansible Automation Platform using Prometheus,Node Exporter and Grafana ](aap-nodeexporter-grafana/README.md)
