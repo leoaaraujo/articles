@@ -314,7 +314,15 @@ systemctl restart grafana-server.service
 
 ## **Conclusion**
 
-Using the Prometheus + Node Exporter + Grafana stack, we can have a complete view of the monitoring of our Ansible Automation Platform, using the integration with the AAP API, we can have a view of the day-to-day use of resources such as jobs, templates and failed or successful executions, with the Node Exporter, we can create a visualization of capacity and consumption of computational resources.
+Using the Prometheus + Postgres_Exporter + Grafana stack, we can have a complete view of the health of the PostgreSQL Database, such as configurations, resource consumption, shared buffer, data ingestion, writing and reading in databases, conflicts and deadlocks, checkpoint, cache, sessions and transactions.
 
 <br>
 
+
+## **References**
+
+For more details and other configurations, start with the reference documents below.
+
+- [PostgreSQL Server Exporter](https://github.com/prometheus-community/postgres_exporter#postgresql-server-exporter)
+
+- [PostgreSQL 13.15 Documentation](https://www.postgresql.org/docs/13/index.html)
