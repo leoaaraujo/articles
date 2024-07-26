@@ -1,4 +1,4 @@
-# **Monitoring Ansible Automation Platform PostgreSQL Server using Prometheus and Grafana**
+# **Monitoring the Ansible Automation Platform Database using Prometheus and Grafana**
 
 &nbsp;
 
@@ -233,7 +233,7 @@ EOF
 systemctl restart prometheus
 ```
 
-* To validate our jobs, in the Prometheus console go to Status > Targets, we will have 3 targets created, as listed below
+* To validate our jobs, in the Prometheus console go to Status > Targets, We will be able to see our postgresql target, as listed below
 
 ![](images/01.png)
 
@@ -279,7 +279,7 @@ providers:
     folder: AAP
     type: file
     options:
-      # Path where our aap-metrics.json file is saved
+      # Path where our aap-pgsql-metrics.json file is saved
       path:
         /etc/grafana/provisioning/dashboards/AAP
 EOF
@@ -295,16 +295,16 @@ systemctl restart grafana-server.service
 
 * To validate that our Dashboard was provisioned correctly, in the Grafana console, in the left side menu, click on Dashboards, we will have our dashboard provisioned in a folder called AAP.
 
-![](images/06.png)
+![](images/03.png)
 
 
 <br>
 
 * To view the dashboard, click on the dashboard name
 
-![](images/07.png)
+![](images/04.png)
 
-![](images/08.png)
+![](images/05.png)
 
 
 
