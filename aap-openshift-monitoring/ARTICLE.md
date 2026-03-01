@@ -222,7 +222,7 @@ spec:
       "timeInterval": "5s"
       httpHeaderName1: 'Authorization'
     secureJsonData:
-      "httpHeaderValue1": "Bearer ${PROMETHEUS_TOKEN}"
+      "httpHeaderValue1": "Bearer \${PROMETHEUS_TOKEN}"
     editable: true
 EOF
 ```
