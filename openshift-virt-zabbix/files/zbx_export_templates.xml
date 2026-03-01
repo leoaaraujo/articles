@@ -1,0 +1,884 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>6.0</version>
+    <date>2026-03-01T22:36:58Z</date>
+    <groups>
+        <group>
+            <uuid>7a1ae1d22e25475980d15a8bcd4dc434</uuid>
+            <name>Openshift</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <uuid>5c2d5b14b08746fea6d5fafddaf438bb</uuid>
+            <template>Template OpenShift Virtualization</template>
+            <name>Template OpenShift Virtualization</name>
+            <groups>
+                <group>
+                    <name>Openshift</name>
+                </group>
+            </groups>
+            <items>
+                <item>
+                    <uuid>46ab23a7adab4136a0d50fdeb266622a</uuid>
+                    <name>Thanos API health</name>
+                    <type>HTTP_AGENT</type>
+                    <key>thanos.api.health</key>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <parameters>
+                                <parameter>var obj = JSON.parse(value);
+
+if (obj.data.result.length === 0) {
+  return 0;
+}
+
+return 1;
+</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                    <url>{$PROM_URL}/api/v1/query</url>
+                    <query_fields>
+                        <query_field>
+                            <name>query</name>
+                            <value>up</value>
+                        </query_field>
+                    </query_fields>
+                    <headers>
+                        <header>
+                            <name>Authorization</name>
+                            <value>Bearer {$PROM_TOKEN}</value>
+                        </header>
+                    </headers>
+                    <triggers>
+                        <trigger>
+                            <uuid>47b7f3cf994b4ce392694294fd0020f5</uuid>
+                            <expression>nodata(/Template OpenShift Virtualization/thanos.api.health,2m)=1
+or
+last(/Template OpenShift Virtualization/thanos.api.health)=0</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>last(/Template OpenShift Virtualization/thanos.api.health)=1</recovery_expression>
+                            <name>Thanos API is unavailable</name>
+                            <priority>HIGH</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>5f0c18e214e0471bb2b5f72e6f4056d1</uuid>
+                    <name>Thanos API latency (p95)</name>
+                    <type>HTTP_AGENT</type>
+                    <key>thanos.api.latency.p95</key>
+                    <value_type>FLOAT</value_type>
+                    <units>s</units>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <parameters>
+                                <parameter>$.data.result[0].value[1]</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                    <url>{$PROM_URL}/api/v1/query</url>
+                    <query_fields>
+                        <query_field>
+                            <name>query</name>
+                            <value>histogram_quantile(   0.95,   sum by (le) (     rate(prometheus_http_request_duration_seconds_bucket[5m])   ) )</value>
+                        </query_field>
+                    </query_fields>
+                    <headers>
+                        <header>
+                            <name>Authorization</name>
+                            <value>Bearer {$PROM_TOKEN}</value>
+                        </header>
+                    </headers>
+                    <triggers>
+                        <trigger>
+                            <uuid>83ba297674ff44fb865fd9fab680eb46</uuid>
+                            <expression>avg(/Template OpenShift Virtualization/thanos.api.latency.p95,5m)&gt;2</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>avg(/Template OpenShift Virtualization/thanos.api.latency.p95,5m)&lt;1</recovery_expression>
+                            <name>Thanos API latency is high</name>
+                            <priority>AVERAGE</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <uuid>9093b11e90d5454eb7745e5b86fd12b4</uuid>
+                    <name>KubeVirt - VM discovery</name>
+                    <type>HTTP_AGENT</type>
+                    <key>kubevirt.vm.discovery</key>
+                    <delay>1h</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>036954b2178845f4a4fda3698658da15</uuid>
+                            <name>VM {#VM} CPU total</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.cpu.request[{#NAMESPACE},{#VM}]</key>
+                            <units>cores</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <parameters>
+                                        <parameter>$.data.result[0].value[1]</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>max by (namespace, name) (   kubevirt_vm_resource_requests{resource=&quot;cpu&quot;, name=&quot;{#VM}&quot;, namespace=&quot;{#NAMESPACE}&quot;} )</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>8f8ad67d7baf4b22917cb7096cc50c9e</uuid>
+                            <name>VM {#VM} CPU usage</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.cpu[{#NAMESPACE},{#VM}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>cores</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+
+if (obj.data.result.length === 0) {
+  return 0;
+}
+
+return obj.data.result[0].value[1];</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>sum by (name,namespace)(rate(kubevirt_vmi_cpu_usage_seconds_total{name=&quot;{#VM}&quot;,namespace=&quot;{#NAMESPACE}&quot;}[5m]))</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>fac7d7baaa3e464b84468e626622d3de</uuid>
+                            <name>VM {#VM} Memory total</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.mem.request[{#NAMESPACE},{#VM}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>B</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <parameters>
+                                        <parameter>$.data.result[0].value[1]</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>max by (namespace, name) (   kubevirt_vm_resource_requests{resource=&quot;memory&quot;, name=&quot;{#VM}&quot;, namespace=&quot;{#NAMESPACE}&quot;} )</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>5a97e79a647341f39ae8eebc94e6544a</uuid>
+                            <name>VM {#VM} Memory Usage</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.memory[{#NAMESPACE},{#VM}]</key>
+                            <units>B</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+
+if (obj.data.result.length === 0) {
+  return 0;
+}
+
+return obj.data.result[0].value[1];</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>sum by (name,namespace)(kubevirt_vmi_memory_used_bytes{name=&quot;{#VM}&quot;,namespace=&quot;{#NAMESPACE}&quot;})</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>4896c389850e4b22867466b53ea4213e</uuid>
+                            <name>VM {#VM} Network RX</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.net.rx[{#NAMESPACE},{#VM}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+
+if (obj.data.result.length === 0) {
+  return 0;
+}
+
+return obj.data.result[0].value[1];
+</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>rate(kubevirt_vmi_network_receive_bytes_total{name=&quot;{#VM}&quot;,namespace=&quot;{#NAMESPACE}&quot;}[5m])</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>90021d14f75e49c288635037719191f7</uuid>
+                            <name>VM {#VM} Network TX</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.net.tx[{#NAMESPACE},{#VM}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+
+if (obj.data.result.length === 0) {
+  return 0;
+}
+
+return obj.data.result[0].value[1];
+</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>rate(kubevirt_vmi_network_transmit_bytes_total{name=&quot;{#VM}&quot;,namespace=&quot;{#NAMESPACE}&quot;}[5m])</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>a325769b127e4806bf2add456cebae54</uuid>
+                            <name>VM {#VM} phase failed</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.phase.failed[{#NAMESPACE},{#VM}]</key>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+
+if (obj.data.result.length === 0) {
+  return 0;
+}
+
+return obj.data.result[0].value[1];
+</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>max by (namespace, name) (   kubevirt_vmi_info{phase=&quot;failed&quot;, name=&quot;{#VM}&quot;, namespace=&quot;{#NAMESPACE}&quot;} )</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>70ce092621384317ad1f080b78ce8772</uuid>
+                                    <expression>last(/Template OpenShift Virtualization/kubevirt.vm.phase.failed[{#NAMESPACE},{#VM}])=1</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>last(/Template OpenShift Virtualization/kubevirt.vm.phase.failed[{#NAMESPACE},{#VM}])=0</recovery_expression>
+                                    <name>VM {#NAMESPACE}/{#VM} is in FAILED state</name>
+                                    <priority>HIGH</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>5c3beeaee425448f8a3926bfa31bdb99</uuid>
+                            <name>VM {#VM} status</name>
+                            <type>HTTP_AGENT</type>
+                            <key>kubevirt.vm.status[{#VM}]</key>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <parameters>
+                                        <parameter>$.data.result[0].value[1]</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <timeout>5s</timeout>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>kubevirt_vm_info{name=&quot;{#VM}&quot;,namespace=&quot;{#NAMESPACE}&quot;}</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>9609115916644ae9b27d9bf3fd3ad211</uuid>
+                                    <expression>max(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}],15m)=0</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>last(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}])=1</recovery_expression>
+                                    <name>VM {#NAMESPACE}/{#VM} is powered off for more than 15 minutes</name>
+                                    <priority>INFO</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <uuid>60dd21430d414b0b9039ad1e24215c4c</uuid>
+                            <expression>(
+avg(/Template OpenShift Virtualization/kubevirt.vm.cpu[{#NAMESPACE},{#VM}],5m)
+/
+last(/Template OpenShift Virtualization/kubevirt.vm.cpu.request[{#NAMESPACE},{#VM}])
+) &gt; 0.90
+and 
+last(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}])=1</expression>
+                            <name>VM {#NAMESPACE}/{#VM} CPU usage high &gt;= 90%</name>
+                            <priority>HIGH</priority>
+                            <description>VM {#NAMESPACE}/{#VM} CPU utilization: {ITEM.LASTVALUE}</description>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>9265facf41f94bb2b34d7770b9bfb10d</uuid>
+                            <expression>(
+avg(/Template OpenShift Virtualization/kubevirt.vm.cpu[{#NAMESPACE},{#VM}],5m)
+/
+last(/Template OpenShift Virtualization/kubevirt.vm.cpu.request[{#NAMESPACE},{#VM}])
+) &gt; 0.70
+and 
+last(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}])=1</expression>
+                            <name>VM {#NAMESPACE}/{#VM} CPU usage high in &gt;= 70%</name>
+                            <priority>WARNING</priority>
+                            <description>VM {#NAMESPACE}/{#VM} CPU utilization: {ITEM.LASTVALUE}</description>
+                            <dependencies>
+                                <dependency>
+                                    <name>VM {#NAMESPACE}/{#VM} CPU usage high &gt;= 90%</name>
+                                    <expression>(
+avg(/Template OpenShift Virtualization/kubevirt.vm.cpu[{#NAMESPACE},{#VM}],5m)
+/
+last(/Template OpenShift Virtualization/kubevirt.vm.cpu.request[{#NAMESPACE},{#VM}])
+) &gt; 0.90
+and 
+last(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}])=1</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>aa73f646c6c24ed18375f1289a4bb6f0</uuid>
+                            <expression>(
+avg(/Template OpenShift Virtualization/kubevirt.vm.memory[{#NAMESPACE},{#VM}],5m)
+/
+last(/Template OpenShift Virtualization/kubevirt.vm.mem.request[{#NAMESPACE},{#VM}])
+) &gt; 0.70
+and
+last(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}])=1</expression>
+                            <name>VM {#NAMESPACE}/{#VM} Memory usage in &gt;= 70%</name>
+                            <priority>WARNING</priority>
+                            <description>VM {#NAMESPACE}/{#VM} Memory usage in {ITEM.LASTVALUE}</description>
+                            <dependencies>
+                                <dependency>
+                                    <name>VM {#NAMESPACE}/{#VM} Memory usage in &gt;= 90%</name>
+                                    <expression>(
+avg(/Template OpenShift Virtualization/kubevirt.vm.memory[{#NAMESPACE},{#VM}],5m)
+/
+last(/Template OpenShift Virtualization/kubevirt.vm.mem.request[{#NAMESPACE},{#VM}])
+) &gt; 0.90
+and
+last(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}])=1</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>75043d087bdf44bda4015c745852999c</uuid>
+                            <expression>(
+avg(/Template OpenShift Virtualization/kubevirt.vm.memory[{#NAMESPACE},{#VM}],5m)
+/
+last(/Template OpenShift Virtualization/kubevirt.vm.mem.request[{#NAMESPACE},{#VM}])
+) &gt; 0.90
+and
+last(/Template OpenShift Virtualization/kubevirt.vm.status[{#VM}])=1</expression>
+                            <name>VM {#NAMESPACE}/{#VM} Memory usage in &gt;= 90%</name>
+                            <priority>HIGH</priority>
+                            <description>VM {#NAMESPACE}/{#VM} Memory usage in {ITEM.LASTVALUE}</description>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <uuid>4d6b6d6bd2934d99a88f918624f47eea</uuid>
+                            <name>VM {#NAMESPACE}/{#VM} Network throughput</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>199C0D</color>
+                                    <item>
+                                        <host>Template OpenShift Virtualization</host>
+                                        <key>kubevirt.vm.net.rx[{#NAMESPACE},{#VM}]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>0040FF</color>
+                                    <item>
+                                        <host>Template OpenShift Virtualization</host>
+                                        <key>kubevirt.vm.net.tx[{#NAMESPACE},{#VM}]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                    <timeout>5s</timeout>
+                    <url>{$PROM_URL}/api/v1/query</url>
+                    <query_fields>
+                        <query_field>
+                            <name>query</name>
+                            <value>kubevirt_vm_info</value>
+                        </query_field>
+                    </query_fields>
+                    <headers>
+                        <header>
+                            <name>Authorization</name>
+                            <value>Bearer {$PROM_TOKEN}</value>
+                        </header>
+                    </headers>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <parameters>
+                                <parameter>var obj = JSON.parse(value);
+var out = [];
+
+for (var i = 0; i &lt; obj.data.result.length; i++) {
+  var m = obj.data.result[i].metric;
+  out.push({
+    &quot;{#VM}&quot;: m.name,
+    &quot;{#NAMESPACE}&quot;: m.namespace
+  });
+}
+
+return JSON.stringify({ &quot;data&quot;: out });</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>172132d50b244d1587658e9ac0102ee0</uuid>
+                    <name>OpenShift - Node discovery</name>
+                    <type>HTTP_AGENT</type>
+                    <key>openshift.node.discovery</key>
+                    <delay>1h</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>46de804c92594fc5b5ce77a4c6b88705</uuid>
+                            <name>Node {#NODE} - Boot time</name>
+                            <type>HTTP_AGENT</type>
+                            <key>node.boot.time[{#NODE}]</key>
+                            <delay>30s</delay>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <parameters>
+                                        <parameter>$.data.result[0].value[1]</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>max by (instance) (node_boot_time_seconds{instance=&quot;{#NODE}&quot;})</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>d6d0932d04b749cc8ce7d1a248260af3</uuid>
+                                    <expression>change(/Template OpenShift Virtualization/node.boot.time[{#NODE}])&lt;&gt;0</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>change(/Template OpenShift Virtualization/node.boot.time[{#NODE}])=0</recovery_expression>
+                                    <name>Node {#NODE} reboot detected</name>
+                                    <priority>AVERAGE</priority>
+                                    <description>Node {#NODE} rebooted. Boot time changed to: {ITEM.LASTVALUE}</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>36863f1c295748f78a4b108c6b7f3b5c</uuid>
+                            <name>Node {#NODE} - CPU Usage</name>
+                            <type>HTTP_AGENT</type>
+                            <key>node.cpu.util[{#NODE}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>%</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <parameters>
+                                        <parameter>$.data.result[0].value[1]</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>100 * (1 - avg(rate(node_cpu_seconds_total{mode=&quot;idle&quot;, instance=&quot;{#NODE}&quot;}[5m])))</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>18cf640d1a264347bb9e3b48e7f1a8e2</uuid>
+                                    <expression>avg(/Template OpenShift Virtualization/node.cpu.util[{#NODE}],5m) &gt; 70</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>avg(/Template OpenShift Virtualization/node.cpu.util[{#NODE}],5m) &lt; 60</recovery_expression>
+                                    <name>Node {#NODE} CPU utilization in &gt;= 70%</name>
+                                    <priority>WARNING</priority>
+                                    <description>Node {#NODE} CPU utilization: {ITEM.LASTVALUE}</description>
+                                    <dependencies>
+                                        <dependency>
+                                            <name>Node {#NODE} CPU utilization in &gt;= 90%</name>
+                                            <expression>avg(/Template OpenShift Virtualization/node.cpu.util[{#NODE}],5m) &gt;= 90</expression>
+                                            <recovery_expression>avg(/Template OpenShift Virtualization/node.cpu.util[{#NODE}],5m) &lt; 80</recovery_expression>
+                                        </dependency>
+                                    </dependencies>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <uuid>085670b0b6734983b0a275db27378001</uuid>
+                                    <expression>avg(/Template OpenShift Virtualization/node.cpu.util[{#NODE}],5m) &gt;= 90</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>avg(/Template OpenShift Virtualization/node.cpu.util[{#NODE}],5m) &lt; 80</recovery_expression>
+                                    <name>Node {#NODE} CPU utilization in &gt;= 90%</name>
+                                    <priority>HIGH</priority>
+                                    <description>Node {#NODE} CPU utilization: {ITEM.LASTVALUE}</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>85fd7184aa38420983d874c185fa6169</uuid>
+                            <name>Node {#NODE} - Memory Usage</name>
+                            <type>HTTP_AGENT</type>
+                            <key>node.mem.util[{#NODE}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>%</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <parameters>
+                                        <parameter>$.data.result[0].value[1]</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>100 * (1 - (node_memory_MemAvailable_bytes{instance=&quot;{#NODE}&quot;} / node_memory_MemTotal_bytes{instance=&quot;{#NODE}&quot;}))</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>c493174c4425487ab6bda222457c9a83</uuid>
+                                    <expression>avg(/Template OpenShift Virtualization/node.mem.util[{#NODE}],5m) &gt;= 70</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>avg(/Template OpenShift Virtualization/node.mem.util[{#NODE}],5m) &lt; 60</recovery_expression>
+                                    <name>Node {#NODE} Memory utilization in &gt;= 70%</name>
+                                    <priority>WARNING</priority>
+                                    <description>Node {#NODE} Memory utilization: {ITEM.LASTVALUE}</description>
+                                    <dependencies>
+                                        <dependency>
+                                            <name>Node {#NODE} Memory utilization in &gt;= 90%</name>
+                                            <expression>avg(/Template OpenShift Virtualization/node.mem.util[{#NODE}],5m) &gt; 90</expression>
+                                            <recovery_expression>avg(/Template OpenShift Virtualization/node.mem.util[{#NODE}],5m) &lt; 80</recovery_expression>
+                                        </dependency>
+                                    </dependencies>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <uuid>2df353a5644540a4a4fb83f1d635aab1</uuid>
+                                    <expression>avg(/Template OpenShift Virtualization/node.mem.util[{#NODE}],5m) &gt; 90</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>avg(/Template OpenShift Virtualization/node.mem.util[{#NODE}],5m) &lt; 80</recovery_expression>
+                                    <name>Node {#NODE} Memory utilization in &gt;= 90%</name>
+                                    <priority>HIGH</priority>
+                                    <description>Node {#NODE} Memory utilization: {ITEM.LASTVALUE}</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>bf2c94a0a90d43bdac11aa0b17e9dfc4</uuid>
+                            <name>Node {#NODE} - Network RX</name>
+                            <type>HTTP_AGENT</type>
+                            <key>node.net.rx[{#NODE}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+if (obj.data.result.length === 0) return 0;
+return obj.data.result[0].value[1];
+</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>sum by (instance) (   rate(node_network_receive_bytes_total{   instance=&quot;{#NODE}&quot;,     device=~&quot;^(ens|enp|eth|bond|br|ovn|eno|em).*&quot;   }[5m]) )</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>6fb7f8031bfd412f804c6637f37b0631</uuid>
+                            <name>Node {#NODE} - Network TX</name>
+                            <type>HTTP_AGENT</type>
+                            <key>node.net.tx[{#NODE}]</key>
+                            <value_type>FLOAT</value_type>
+                            <units>Bps</units>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+if (obj.data.result.length === 0) return 0;
+return obj.data.result[0].value[1];
+</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>sum by (instance) (   rate(node_network_transmit_bytes_total{    instance=&quot;{#NODE}&quot;,     device=~&quot;^(ens|enp|eth|bond|br|ovn|eno|em).*&quot;   }[5m]) )</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>7b5809b8d21f40df84f943515674e1ad</uuid>
+                            <name>Node {#NODE} Ready status</name>
+                            <type>HTTP_AGENT</type>
+                            <key>node.ready[{#NODE}]</key>
+                            <delay>30s</delay>
+                            <preprocessing>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <parameters>
+                                        <parameter>var obj = JSON.parse(value);
+if (obj.data.result.length === 0) return 0;
+return obj.data.result[0].value[1];
+</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <url>{$PROM_URL}/api/v1/query</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>query</name>
+                                    <value>max by (node) (   kube_node_status_condition{     condition=&quot;Ready&quot;,     status=&quot;true&quot;,     node=&quot;{#NODE}&quot;   } )</value>
+                                </query_field>
+                            </query_fields>
+                            <headers>
+                                <header>
+                                    <name>Authorization</name>
+                                    <value>Bearer {$PROM_TOKEN}</value>
+                                </header>
+                            </headers>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>b56cbbf9596b491c80cfe3aee00b23b8</uuid>
+                                    <expression>last(/Template OpenShift Virtualization/node.ready[{#NODE}]) = 0</expression>
+                                    <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                                    <recovery_expression>last(/Template OpenShift Virtualization/node.ready[{#NODE}]) = 1</recovery_expression>
+                                    <name>Node {#NODE} is NotReady</name>
+                                    <priority>HIGH</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <uuid>d7ade6aa3648407497bee7339121596d</uuid>
+                            <name>Node {#NODE} - CPU &amp; Memory</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>199C0D</color>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Template OpenShift Virtualization</host>
+                                        <key>node.cpu.util[{#NODE}]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>0040FF</color>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Template OpenShift Virtualization</host>
+                                        <key>node.mem.util[{#NODE}]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                        <graph_prototype>
+                            <uuid>bc75d10ea76142b8aff563b2737fe96a</uuid>
+                            <name>Node {#NODE} - Network throughput</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>199C0D</color>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Template OpenShift Virtualization</host>
+                                        <key>node.net.rx[{#NODE}]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>0040FF</color>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Template OpenShift Virtualization</host>
+                                        <key>node.net.tx[{#NODE}]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                    <url>{$PROM_URL}/api/v1/query</url>
+                    <query_fields>
+                        <query_field>
+                            <name>query</name>
+                            <value>count by (node) (kube_node_labels{label_kubevirt_io_schedulable=&quot;true&quot;})</value>
+                        </query_field>
+                    </query_fields>
+                    <headers>
+                        <header>
+                            <name>Authorization</name>
+                            <value>Bearer {$PROM_TOKEN}</value>
+                        </header>
+                    </headers>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <parameters>
+                                <parameter>var obj = JSON.parse(value);
+var out = [];
+
+for (var i = 0; i &lt; obj.data.result.length; i++) {
+  out.push({ &quot;{#NODE}&quot;: obj.data.result[i].metric.node });
+}
+
+return JSON.stringify({ &quot;data&quot;: out });
+</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+        </template>
+    </templates>
+</zabbix_export>
