@@ -215,7 +215,7 @@ return JSON.stringify({ "data": out });
 ![](images/zbx_lld_test.png)
 
 > [!NOTE]
-> With this test, we can see that our script is working correctly.
+> _With this test, we can see that our script is working correctly_.
 
 - Click `Add` to save our Preprocessing and click `Add` again to save our Discovery Rule.
 
@@ -260,6 +260,7 @@ return obj.data.result[0].value[1];
 > [!NOTE]
 > _This script processes the collected information; if the VM has no CPU usage data, it will be displayed as 0._
 
+&nbsp;
 
 - Click `Add` to save our Preprocessing and click `Add` again to save our Item.
 
@@ -277,6 +278,8 @@ return obj.data.result[0].value[1];
 
 > [!NOTE]
 > _The remaining fields should remain the same._
+
+&nbsp;
 
 - Click on `Preprocessing` > `Add` > In Name, select `JSONPath` > click on `Parameters` and add the value `$.data.result[0].value[1]`
 
@@ -504,7 +507,7 @@ return obj.data.result[0].value[1];
 
 - Click [HERE](./files/zbx_export_templates.xml) to download the XML for this base template.
 
-> [!NOTE]
+> [!IMPORTANT]
 > _This is not a complete template; it should be used as a base and customized according to the environment/cluster._
 
 
